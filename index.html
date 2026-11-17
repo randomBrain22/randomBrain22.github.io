@@ -106,7 +106,9 @@ function renderDaily(){
 }
 function renderCollection(){
  const grid=document.getElementById("placeGrid");
- grid.innerHTML=P.map(p=>'<article class="card" role="button" tabindex="0" data-place="'+p.id+'"><div class="cover"><img src="'+(p.images&&p.images[0]?p.images[0][1]:"")+'" alt="'+p.name+'" loading="lazy"></div><div class="cardbody"><div class="placecountry">'+p.region+' · '+p.country+'</div><h3>'+p.name+'</h3><p>'+p.short+'</p><div class="cardfoot"><span>'+p.type+'</span><span class="arrow">→</span></div></div></article>').join("");
+ const shuffled=[...P];
+ for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]}
+ grid.innerHTML=shuffled.map(p=>'<article class="card" role="button" tabindex="0" data-place="'+p.id+'"><div class="cover"><img src="'+(p.images&&p.images[0]?p.images[0][1]:"")+'" alt="'+p.name+'" loading="lazy"></div><div class="cardbody"><div class="placecountry">'+p.region+' · '+p.country+'</div><h3>'+p.name+'</h3><p>'+p.short+'</p><div class="cardfoot"><span>'+p.type+'</span><span class="arrow">→</span></div></div></article>').join("");
  grid.addEventListener("click",e=>{const card=e.target.closest("[data-place]");if(card)showPlace(card.dataset.place)});
  grid.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-place]")){e.preventDefault();showPlace(e.target.dataset.place)}});
 }
