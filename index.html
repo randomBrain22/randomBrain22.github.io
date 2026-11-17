@@ -77,8 +77,8 @@ function drawGlobeFrame(){
  if(countries){ctx.beginPath();path(countries);ctx.fillStyle="#a9c99a";ctx.fill();ctx.strokeStyle="rgba(238,246,218,.55)";ctx.lineWidth=.35;ctx.stroke()}
  if(borders){ctx.beginPath();path(borders);ctx.strokeStyle="rgba(245,250,231,.75)";ctx.lineWidth=.55;ctx.stroke()}
  // Inland water is drawn above land so lakes and rivers remain visible at every zoom.
- if(lakes){ctx.beginPath();path(lakes);ctx.fillStyle="#70b8c5";ctx.fill();ctx.strokeStyle="rgba(37,111,132,.65)";ctx.lineWidth=.45;ctx.stroke()}
- if(rivers){ctx.beginPath();path(rivers);ctx.strokeStyle="rgba(77,169,190,.9)";ctx.lineWidth=Math.max(.45,.75*zoom**.18);ctx.stroke()}
+ if(zoom>1.12&&lakes){ctx.beginPath();path(lakes);ctx.fillStyle="#70b8c5";ctx.fill();ctx.strokeStyle="rgba(37,111,132,.65)";ctx.lineWidth=.45;ctx.stroke()}
+ if(zoom>1.12&&rivers){ctx.beginPath();path(rivers);ctx.strokeStyle="rgba(77,169,190,.9)";ctx.lineWidth=.65;ctx.stroke()}
  if(coastline){ctx.beginPath();path(coastline);ctx.strokeStyle="rgba(31,77,65,.82)";ctx.lineWidth=.75;ctx.stroke()}
  ctx.beginPath();path(graticule);ctx.strokeStyle="rgba(229,248,242,.22)";ctx.lineWidth=.55;ctx.stroke();
  ctx.restore();
@@ -91,18 +91,18 @@ async function loadWorld(){try{
  let libError;
  for(const base of ["https://esm.sh/","https://cdn.jsdelivr.net/npm/"]){try{const suffix=base.includes("esm.sh")?"?bundle":"+esm";const [geo,topo]=await Promise.all([import(base+"d3-geo@3"+suffix),import(base+"topojson-client@3"+suffix)]);d3=geo;topojson=topo;break}catch(error){libError=error}}
  if(!d3||!d3.geoOrthographic||!topojson||!topojson.feature)throw new Error("map libraries unavailable: "+(libError&&libError.message||"missing required functions"));
- // 1:50m Natural Earth data adds many small islands and a more faithful coastline.
+ // Keep the fast 1:110m base map; draw water detail only when zoomed in.
  let dataError;
- for(const url of ["https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json","https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"]){try{const response=await fetch(url,{mode:"cors",cache:"force-cache"});if(!response.ok)throw new Error("country data HTTP "+response.status);world=await response.json();break}catch(error){dataError=error}}
+ for(const url of ["https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"]){try{const response=await fetch(url,{mode:"cors",cache:"force-cache"});if(!response.ok)throw new Error("country data HTTP "+response.status);world=await response.json();break}catch(error){dataError=error}}
  if(!world||!world.objects||!world.objects.countries)throw new Error("could not download country data: "+(dataError&&dataError.message||"unknown network error"));
  countries=topojson.feature(world,world.objects.countries);borders=topojson.mesh(world,world.objects.countries,(a,b)=>a!==b);coastline=topojson.mesh(world,world.objects.countries,(a,b)=>a===b);
  // Lakes and river centre-lines are separate Natural Earth layers; failures do not prevent the globe loading.
  const loadGeoJSON=async url=>{const r=await fetch(url,{mode:"cors",cache:"force-cache"});if(!r.ok)throw new Error("water layer HTTP "+r.status);return r.json()};
  const waterBase="https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/";
- const water=await Promise.allSettled([loadGeoJSON(waterBase+"ne_50m_lakes.geojson"),loadGeoJSON(waterBase+"ne_50m_rivers_lake_centerlines.geojson")]);
+ const water=await Promise.allSettled([loadGeoJSON(waterBase+"ne_110m_lakes.geojson"),loadGeoJSON(waterBase+"ne_110m_rivers_lake_centerlines.geojson")]);
  if(water[0].status==="fulfilled")lakes=water[0].value;
  if(water[1].status==="fulfilled")rivers=water[1].value;
- tip.textContent=water.every(x=>x.status==="fulfilled")?"drag to rotate · pinch to zoom · tap a glowing point":"drag to rotate · pinch to zoom · tap a glowing point · some water detail unavailable";
+ tip.textContent=water.every(x=>x.status==="fulfilled")?"drag to rotate · pinch to zoom · zoom in for lakes and rivers · tap a glowing point":"drag to rotate · pinch to zoom · tap a glowing point · some water detail unavailable";
  drawGlobe();
  }catch(error){tip.textContent="map error: "+(error.message||"unknown error")+". saved locations are still available below.";console.error("globe map loading failed:",error)}}
 function renderGlobePlaces(){document.getElementById("globePlaces").innerHTML=P.map(p=>'<button class="globe-place" data-place="'+p.id+'"><span></span>'+p.name+' <small>'+p.country+'</small></button>').join("")}
