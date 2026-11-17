@@ -45,6 +45,11 @@
 <section class="daily" id="daily"></section>
 <section class="globe-section" aria-label="interactive globe"><div class="globe-top"><span>explore the globe</span><span>drag to rotate · pinch or scroll to zoom · select a marker</span></div><div class="globe-wrap"><canvas id="globe" aria-label="interactive globe showing saved locations"></canvas><div class="globe-controls"><button id="zoomOut" aria-label="zoom out">−</button><button id="zoomIn" aria-label="zoom in">+</button><button id="resetGlobe" aria-label="reset globe view">reset</button></div><div class="globe-tip">loading detailed country borders…</div></div><div class="globe-places" id="globePlaces" aria-label="locations on the globe"></div></section>
 
+<section class="collection" aria-label="saved places">
+  <div class="section-head"><h2>the collection</h2><p>small places, big stories</p></div>
+  <div class="grid" id="placeGrid"></div>
+</section>
+
 </section>
 <section class="detail" id="detail"><button class="back" id="back">← back to the collection</button><div id="detailbody"></div></section>
 <footer><span>places. · procrastinate less, learn more</span><span>curiosity has no borders</span></footer>
@@ -93,10 +98,22 @@ document.getElementById("resetGlobe").addEventListener("click",()=>{centerLon=55
 document.getElementById("globePlaces").addEventListener("click",e=>{const b=e.target.closest("[data-place]");if(b)showFromGlobe(b.dataset.place)});
 window.addEventListener("resize",drawGlobe);
 renderGlobePlaces();loadWorld();
+function renderDaily(){
+ const day=new Date();const key=day.getFullYear()*10000+(day.getMonth()+1)*100+day.getDate();
+ const p=P[key%P.length];
+ const image=p.images&&p.images[0]?p.images[0][1]:"";
+ document.getElementById("daily").innerHTML='<div class="daily-copy"><div class="eyebrow">location of the day</div><h1>'+p.name+'</h1><p>'+p.short+'</p><div class="daily-meta">'+p.region+' · '+p.country+'</div><a class="daily-link" href="#'+p.id+'" data-daily="'+p.id+'">discover this place <span>→</span></a></div><div class="daily-image"><img src="'+image+'" alt="'+p.name+'" loading="eager"></div>';
+}
+function renderCollection(){
+ const grid=document.getElementById("placeGrid");
+ grid.innerHTML=P.map(p=>'<article class="card" role="button" tabindex="0" data-place="'+p.id+'"><div class="cover"><img src="'+(p.images&&p.images[0]?p.images[0][1]:"")+'" alt="'+p.name+'" loading="lazy"></div><div class="cardbody"><div class="placecountry">'+p.region+' · '+p.country+'</div><h3>'+p.name+'</h3><p>'+p.short+'</p><div class="cardfoot"><span>'+p.type+'</span><span class="arrow">→</span></div></div></article>').join("");
+ grid.addEventListener("click",e=>{const card=e.target.closest("[data-place]");if(card)showPlace(card.dataset.place)});
+ grid.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-place]")){e.preventDefault();showPlace(e.target.dataset.place)}});
+}
 function detailHTML(p){const section=(text,points)=>points?'<ul class="storypoints">'+points.map(x=>'<li>'+x+'</li>').join("")+'</ul>':'<p>'+text+'</p>';return '<div class="detailhead"><div><div class="eyebrow">'+p.region+' · '+p.country+'</div><h1>'+p.name+'</h1></div><p>'+p.short+'</p></div><div class="detailgrid">'+p.images.map(im=>'<a href="'+im[2]+'" target="_blank" rel="noopener" title="view image source"><img src="'+im[1]+'" alt="'+im[0]+'" loading="lazy"></a>').join("")+'</div><div class="detailcontent"><div><h2>'+(p.introHeading||"the story behind it")+'</h2>'+section(p.intro,p.introPoints)+'<h2>'+(p.storyHeading||"the detail most people miss")+'</h2>'+section(p.story,p.storyPoints)+'<div class="detailactions">'+p.sources.map(s=>'<a href="'+s[1]+'" target="_blank" rel="noopener">'+s[0]+' ↗</a>').join("")+'<a href="'+p.map+'" target="_blank" rel="noopener">open map ↗</a></div></div><aside class="facts"><h3>remember this</h3><ul>'+p.facts.map(f=>'<li>'+f+'</li>').join("")+'</ul></aside></div>'}
 function showPlace(id,addHistory=true){const p=P.find(x=>x.id===id);if(!p)return;listing.classList.add("hide");detail.classList.add("show");detailbody.innerHTML=detailHTML(p);if(addHistory)history.pushState({place:id},"","#"+id);window.scrollTo({top:0,behavior:"smooth"})}
 function back(addHistory=true){detail.classList.remove("show");listing.classList.remove("hide");if(addHistory)history.pushState({},"",location.pathname+location.search);window.scrollTo({top:0,behavior:"smooth"})}
-document.getElementById("daily").addEventListener("click",e=>{const a=e.target.closest("[data-daily]");if(a){e.preventDefault();showPlace(a.dataset.daily)}});document.getElementById("back").addEventListener("click",()=>back());document.getElementById("homeLogo").addEventListener("click",e=>{e.preventDefault();back()});window.addEventListener("popstate",()=>{const id=location.hash.slice(1);if(id)showPlace(id,false);else back(false)});renderDaily();renderGlobePlaces();drawGlobe();if(location.hash){const p=P.find(x=>x.id===location.hash.slice(1));if(p)showPlace(p.id,false)}
+document.getElementById("daily").addEventListener("click",e=>{const a=e.target.closest("[data-daily]");if(a){e.preventDefault();showPlace(a.dataset.daily)}});document.getElementById("back").addEventListener("click",()=>back());document.getElementById("homeLogo").addEventListener("click",e=>{e.preventDefault();back()});window.addEventListener("popstate",()=>{const id=location.hash.slice(1);if(id)showPlace(id,false);else back(false)});renderDaily();renderGlobePlaces();renderCollection();drawGlobe();if(location.hash){const p=P.find(x=>x.id===location.hash.slice(1));if(p)showPlace(p.id,false)}
 </script>
 </body>
 </html>
